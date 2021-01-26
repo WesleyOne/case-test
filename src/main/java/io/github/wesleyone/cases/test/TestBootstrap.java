@@ -101,22 +101,39 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
             this.tag = tag;
         }
     }
+    static class TestParamPO {
+        Class<? extends IParam> clazz;
+        List<String> in;
+
+        public Class<? extends IParam> getClazz() {
+            return clazz;
+        }
+
+        public void setClazz(Class<? extends IParam> clazz) {
+            this.clazz = clazz;
+        }
+
+        public List<String> getIn() {
+            return in;
+        }
+
+        public void setIn(List<String> in) {
+            this.in = in;
+        }
+    }
+
     /**
      * 自动运行测试入口
-     * 流程：
-     * 1.校验
-     * 2.解析
-     * 3.构建
-     * 4.执行
+     * core
      */
     public void run() {
-        // 检验
+        // 检验 check
         check();
-        // 解析
+        // 解析注解 parse information of annotation
         HashMap<Method, HashMap<String, CasePO>> testMethodMap = parseTestMethods();
-        // 构建
+        // 构建用例 build case-context
         HashMap<Method, List<TestCaseContext<T>>> testCaseContextMap = buildCaseContext(testMethodMap);
-        // 执行
+        // 执行 invoke test method
         invoke(testCaseContextMap);
     }
 
@@ -240,27 +257,21 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
             if (testCases == null) {
                 continue;
             }
-            List<ParamPO> commonParamList = new ArrayList<>();
-            // 处理公共参数
-            TestParam[] testParams = testCases.params();
-            for (TestParam commonParam : testParams) {
-                ParamPO testParam = getTestParam(commonParam);
-                commonParamList.add(testParam);
-            }
+
             // 处理各个case下参数
             TestCase[] cases = testCases.cases();
             if (cases.length <= 0) {
                 continue;
             }
+            List<TestParamPO> commonParamList = changeTestParams2PO(testCases.params());
             for (TestCase testCase : cases) {
+                List<TestParamPO> paramList = changeTestParams2PO(testCase.params());
+                paramList = cleanTestParams(paramList, commonParamList);
                 List<ParamPO> caseParamList = new ArrayList<>();
-                TestParam[] caseParams = testCase.params();
-                for (TestParam testParam : caseParams) {
+                for (TestParamPO testParam : paramList) {
                     ParamPO testParamPo = getTestParam(testParam);
                     caseParamList.add(testParamPo);
                 }
-                // 添加公共参数
-                caseParamList.addAll(commonParamList);
                 CasePO casePo = new CasePO();
                 casePo.setCaseName(testCase.name());
                 casePo.setCaseDesc(testCase.desc());
@@ -272,8 +283,41 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
         return testMethodMap;
     }
 
-    private ParamPO getTestParam(TestParam testParam) {
-        Class<? extends IParam> paramClazz = testParam.clazz();
+    private List<TestParamPO> cleanTestParams(List<TestParamPO> caseParamList, List<TestParamPO> commonParamList) {
+        HashMap<Class<? extends IParam>, Set<String>> clazzParamMap = new HashMap<>();
+        for (TestParamPO testParam : caseParamList) {
+            Set<String> paramNames = clazzParamMap.getOrDefault(testParam.getClazz(), new HashSet<>());
+            paramNames.addAll(testParam.getIn());
+            clazzParamMap.put(testParam.getClazz(), paramNames);
+        }
+        for (TestParamPO testParam : commonParamList) {
+            Set<String> paramNames = clazzParamMap.getOrDefault(testParam.getClazz(), new HashSet<>());
+            paramNames.addAll(testParam.getIn());
+            clazzParamMap.put(testParam.getClazz(), paramNames);
+        }
+        List<TestParamPO> paramList = new ArrayList<>();
+        for (Map.Entry<Class<? extends IParam>, Set<String>> entry : clazzParamMap.entrySet()) {
+            TestParamPO testParamPO = new TestParamPO();
+            testParamPO.setClazz(entry.getKey());
+            testParamPO.setIn(new ArrayList<>(entry.getValue()));
+            paramList.add(testParamPO);
+        }
+        return paramList;
+    }
+
+    private List<TestParamPO> changeTestParams2PO(TestParam[] testParams) {
+        List<TestParamPO> commonParamList = new ArrayList<>();
+        for (TestParam commonParam : testParams) {
+            TestParamPO testParamPO = new TestParamPO();
+            testParamPO.setClazz(commonParam.clazz());
+            testParamPO.setIn(Arrays.asList(commonParam.in()));
+            commonParamList.add(testParamPO);
+        }
+        return commonParamList;
+    }
+
+    private ParamPO getTestParam(TestParamPO testParam) {
+        Class<? extends IParam> paramClazz = testParam.getClazz();
         IParam paramObject;
         try {
             paramObject = paramClazz.newInstance();
@@ -281,7 +325,7 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
             throw new RuntimeException("实例化参数对象异常["+paramClazz.getSimpleName()+"]", e);
         }
         Class<?> allowReturnType = paramObject.getParamType();
-        List<String> includesParamTestMethods = Arrays.asList(testParam.in());
+        List<String> includesParamTestMethods = testParam.getIn();
         boolean allParamMethods = false;
         if (includesParamTestMethods.contains(ALL_PARAMS_TAG)) {
             allParamMethods = true;
