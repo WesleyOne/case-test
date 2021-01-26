@@ -12,7 +12,7 @@ import org.junit.Test;
 import java.util.List;
 
 /**
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 public class DemoTestBootstrap extends TestBootstrap<DemoBizContext> {
 
@@ -30,9 +30,9 @@ public class DemoTestBootstrap extends TestBootstrap<DemoBizContext> {
     public void setProperties(DemoBizContext bizContext, Class<?> propertyClass, String tag, Object value) {
         if (value instanceof ParamA) {
             bizContext.setParamA((ParamA)value);
-        } else if (value instanceof ParamB) {
+        } else if (tag.equals(ParamBImpl.class.getTypeName())) {
             bizContext.setParamB((ParamB)value);
-        } else if (tag.equals(ParamCImpl.class.getTypeName()) ) {
+        } else if (tag.equals(ParamCImpl.class.getTypeName())) {
             bizContext.setParamC((List<ParamC>)value);
         }
     }

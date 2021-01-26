@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * 参数条件
  * Interface is used to specify conditions of parameter
  *
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

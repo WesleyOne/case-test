@@ -4,7 +4,7 @@ package io.github.wesleyone.cases.test;
  * 场景上下文
  * be used to connection context of test-case
  *
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 public class TestCaseContext<T> {
     /**

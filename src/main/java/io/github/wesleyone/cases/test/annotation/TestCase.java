@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * 场景用接口
  * Interface is used to specify a case
  *
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

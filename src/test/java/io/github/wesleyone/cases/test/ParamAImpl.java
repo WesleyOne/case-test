@@ -3,7 +3,7 @@ package io.github.wesleyone.cases.test;
 import io.github.wesleyone.cases.test.params.ParamA;
 
 /**
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 public class ParamAImpl implements IParam{
 

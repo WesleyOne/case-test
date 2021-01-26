@@ -4,7 +4,7 @@ package io.github.wesleyone.cases.test;
  * 参数对象用接口
  * Interface is used to discover parameters
  *
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 public interface IParam {
 

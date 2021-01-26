@@ -3,7 +3,7 @@ package io.github.wesleyone.cases.test.params;
 import java.util.List;
 
 /**
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 public class DemoBizContext {
 

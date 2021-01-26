@@ -11,7 +11,7 @@ import java.util.*;
  * 核型测试启动类
  * Bootstrap for testing cases
  *
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 public abstract class TestBootstrap<T> implements IBizContext<T> {
 

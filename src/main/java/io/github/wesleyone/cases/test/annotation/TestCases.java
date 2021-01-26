@@ -6,7 +6,7 @@ import java.lang.annotation.*;
  * 场景集合用接口
  * Interface is used to specify cases
  *
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -4,7 +4,7 @@ import io.github.wesleyone.cases.test.params.ParamA;
 import io.github.wesleyone.cases.test.params.ParamB;
 
 /**
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 public class ParamBImpl implements IParam{
 

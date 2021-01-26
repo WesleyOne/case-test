@@ -1,7 +1,7 @@
 package io.github.wesleyone.cases.test.params;
 
 /**
- * @AUTHOR: http://wesleyone.github.io/
+ * @author http://wesleyone.github.io/
  */
 public class ParamC {
 
