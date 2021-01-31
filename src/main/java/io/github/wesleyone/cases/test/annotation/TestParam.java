@@ -27,10 +27,10 @@ public @interface TestParam {
     Class<? extends IParam> clazz();
 
     /**
-     * 参数类型类里的需要包含的方法名称
+     * 参数类型类里的需要包含的方法名称，即参与组合的参数对象
      * 例如{"method1","method2"}
-     *
-     * @return 包含的方法名称
+     * 默认"*"代表全部
+     * @return 所需参数实现类的方法名称
      */
-    String[] in() default {};
+    String[] in() default {"*"};
 }

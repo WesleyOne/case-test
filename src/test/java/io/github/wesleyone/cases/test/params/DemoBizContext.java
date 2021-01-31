@@ -8,8 +8,8 @@ import java.util.List;
 public class DemoBizContext {
 
     private ParamA paramA;
-    private ParamB paramB;
-    private List<ParamC> paramC;
+    private List<ParamB> paramB;
+    private ParamC paramC;
 
     public ParamA getParamA() {
         return paramA;
@@ -19,19 +19,19 @@ public class DemoBizContext {
         this.paramA = paramA;
     }
 
-    public ParamB getParamB() {
+    public List<ParamB> getParamB() {
         return paramB;
     }
 
-    public void setParamB(ParamB paramB) {
+    public void setParamB(List<ParamB> paramB) {
         this.paramB = paramB;
     }
 
-    public List<ParamC> getParamC() {
+    public ParamC getParamC() {
         return paramC;
     }
 
-    public void setParamC(List<ParamC> paramC) {
+    public void setParamC(ParamC paramC) {
         this.paramC = paramC;
     }
 
