@@ -19,11 +19,10 @@ public interface IBizContext<T> {
      * 设置属性值
      * set Properties of YOUR BUSINESS CONTEXT
      * @param bizContext    业务上下文对象 YOUR BUSINESS CONTEXT
-     * @param propertyClazz 属性类型
      * @param tag           参数标记 {@link IParam#getTag()}
      * @param value         属性值
      */
-    void setProperties(T bizContext, Class<?> propertyClazz, String tag, Object value);
+    void setProperties(T bizContext, String tag, Object value);
 
     /**
      * 业务处理

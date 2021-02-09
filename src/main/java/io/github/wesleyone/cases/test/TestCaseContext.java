@@ -1,5 +1,7 @@
 package io.github.wesleyone.cases.test;
 
+import java.util.List;
+
 /**
  * 场景上下文
  * be used to connection context of test-case
@@ -16,9 +18,9 @@ public class TestCaseContext<T> {
      */
     private String caseDesc;
     /**
-     * 上下文拼接名称
+     * 当前用例的关联的参数方法名
      */
-    private String contextName;
+    private List<String> paramNames;
     /**
      * 业务上下文
      */
@@ -43,12 +45,12 @@ public class TestCaseContext<T> {
         this.caseDesc = caseDesc;
     }
 
-    public String getContextName() {
-        return contextName;
+    public List<String> getParamNames() {
+        return paramNames;
     }
 
-    public void setContextName(String contextName) {
-        this.contextName = contextName;
+    public void setParamNames(List<String> paramNames) {
+        this.paramNames = paramNames;
     }
 
     public T getContext() {
@@ -64,7 +66,7 @@ public class TestCaseContext<T> {
         return "TestCaseContext{" +
                 "caseName='" + caseName + '\'' +
                 ", caseDesc='" + caseDesc + '\'' +
-                ", contextName='" + contextName + '\'' +
+                ", paramNames=" + paramNames +
                 ", context=" + context +
                 '}';
     }

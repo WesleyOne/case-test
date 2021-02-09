@@ -6,15 +6,7 @@ package io.github.wesleyone.cases.test;
  *
  * @author http://wesleyone.github.io/
  */
-public interface IParam {
-
-    /**
-     * 指定参数类型
-     * specify type of parameter
-     *
-     * @return 参数类型
-     */
-    Class<?> getParamType();
+public interface IParam<T> {
 
     /**
      * 根据参数标记，可用于自定义设置参数

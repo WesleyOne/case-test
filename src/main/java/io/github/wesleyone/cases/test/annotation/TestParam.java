@@ -24,7 +24,7 @@ public @interface TestParam {
      *
      * @return 参数类型
      */
-    Class<? extends IParam> clazz();
+    Class<? extends IParam<?>> clazz();
 
     /**
      * 参数类型类里的需要包含的方法名称，即参与组合的参数对象

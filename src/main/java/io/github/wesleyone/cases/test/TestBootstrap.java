@@ -3,9 +3,9 @@ package io.github.wesleyone.cases.test;
 import io.github.wesleyone.cases.test.annotation.TestCase;
 import io.github.wesleyone.cases.test.annotation.TestCases;
 import io.github.wesleyone.cases.test.annotation.TestParam;
+import io.github.wesleyone.cases.test.util.GenericsUtil;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.*;
 
 /**
@@ -53,10 +53,9 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
         for (Map.Entry<Method, List<TestCaseContext<T>>> methodTestCaseContext : testCaseContextMap.entrySet()) {
             Method testMethod = methodTestCaseContext.getKey();
             for (TestCaseContext<T> testCaseContext : methodTestCaseContext.getValue()) {
-                System.out.println(testCaseContext.getContextName());
                 try {
                     doBefore(testCaseContext, testMethod);
-                    doHandle(testCaseContext.getContext());
+                    doHandle(testCaseContext);
                     doAfter(testCaseContext, testMethod);
                 } catch (Throwable e) {
                     e.printStackTrace();
@@ -73,12 +72,12 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
         try {
             testMethod.invoke(this, testCaseContext);
         } catch (Exception e) {
-            throw new RuntimeException("调用后置方法失败["+this.getClass().getSimpleName()+"#"+testMethod.getName()+"#"+ testCaseContext.getCaseName()+"#"+testCaseContext.getContextName()+"]", e);
+            throw new RuntimeException("调用后置方法失败["+this.getClass().getSimpleName()+"#"+testMethod.getName()+"#"+ testCaseContext.getCaseName()+"#"+testCaseContext.getParamNames()+"]", e);
         }
     }
 
-    private void doHandle(T t) {
-        handle(t);
+    private void doHandle(TestCaseContext<T> testCaseContext) {
+        handle(testCaseContext.getContext());
     }
 
     private void doBefore(TestCaseContext<T> testCaseContext, Method testMethod) {
@@ -98,12 +97,12 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
         if (testMethodMap == null || testMethodMap.isEmpty()) {
             return null;
         }
-        HashMap<Method, List<TestCaseContext<T>>> methodTestCaseContextMap = new HashMap<>();
+        HashMap<Method, List<TestCaseContext<T>>> methodTestCaseContextMap = new HashMap<>(16);
         for (Map.Entry<Method, HashMap<String, CaseObject>> testMethod : testMethodMap.entrySet()) {
             List<TestCaseContext<T>> testCaseContexts = new ArrayList<>();
-            HashMap<String, CaseObject> casePOMap = testMethod.getValue();
-            for (CaseObject caseObject : casePOMap.values()) {
-                List<ParamObject> paramObjectList = caseObject.getParamPOList();
+            HashMap<String, CaseObject> caseObjectMap = testMethod.getValue();
+            for (CaseObject caseObject : caseObjectMap.values()) {
+                List<ParamObject> paramObjectList = caseObject.getParamObjectList();
                 List<TestCaseContext<T>> caseContextList = autoSetParametersAndBuildContext(caseObject, paramObjectList);
                 testCaseContexts.addAll(caseContextList);
             }
@@ -120,30 +119,30 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
     }
 
     private List<TestCaseContext<T>> autoSetParametersAndBuildContext(CaseObject caseObject, List<ParamObject> paramObjectList, int index) {
-        ParamObject paramPO = paramObjectList.get(index);
-        Class<?> paramClazz = paramPO.getParamClazz();
-        String tag = paramPO.getTag();
-        Map<String, Object> paramObjectMap = paramPO.getParamObjectMap();
+        ParamObject paramObject = paramObjectList.get(index);
+        String tag = paramObject.getTag();
+        Map<String, Object> paramObjectMap = paramObject.getParamObjectMap();
         List<TestCaseContext<T>> contextList = new ArrayList<>();
-        for (Map.Entry<String, Object> paramObject : paramObjectMap.entrySet()) {
-            String key = paramObject.getKey();
-            Object value = paramObject.getValue();
+        for (Map.Entry<String, Object> paramRealObject : paramObjectMap.entrySet()) {
+            String key = paramRealObject.getKey();
+            Object value = paramRealObject.getValue();
             if (index <= 0) {
-                // 最后一层
+                // final layer
                 T t = newInstance();
-                setProperties(t, paramClazz, tag, value);
+                setProperties(t, tag, value);
                 TestCaseContext<T> testCaseContext = new TestCaseContext<>();
-                testCaseContext.setCaseName(caseObject.caseName);
-                testCaseContext.setCaseDesc(caseObject.caseDesc);
-                testCaseContext.setContextName(key);
+                testCaseContext.setCaseName(caseObject.getCaseName());
+                testCaseContext.setCaseDesc(caseObject.getCaseDesc());
+                List<String> paramNames = new ArrayList<>();
+                paramNames.add(key);
+                testCaseContext.setParamNames(paramNames);
                 testCaseContext.setContext(t);
                 contextList.add(testCaseContext);
             } else {
-                // 不是最后一层
                 List<TestCaseContext<T>> testCaseContexts = autoSetParametersAndBuildContext(caseObject, paramObjectList, index - 1);
                 for (TestCaseContext<T> testCaseContext : testCaseContexts) {
-                    setProperties(testCaseContext.getContext(), paramClazz, tag, value);
-                    testCaseContext.setContextName(testCaseContext.getContextName()+key);
+                    setProperties(testCaseContext.getContext(), tag, value);
+                    testCaseContext.getParamNames().add(key);
                 }
                 contextList.addAll(testCaseContexts);
             }
@@ -152,7 +151,7 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
     }
 
     private HashMap<Method, HashMap<String, CaseObject>> parseTestMethods() {
-        HashMap<Method, HashMap<String, CaseObject>> testMethodMap = new HashMap<>();
+        HashMap<Method, HashMap<String, CaseObject>> testMethodMap = new HashMap<>(16);
         Method[] methods = this.getClass().getDeclaredMethods();
         for (Method method : methods) {
             TestCase[] cases;
@@ -171,13 +170,13 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
             if (cases.length <= 0) {
                 continue;
             }
-            HashMap<String, CaseObject> caseMap = new HashMap<>();
+            HashMap<String, CaseObject> caseMap = new HashMap<>(16);
             for (TestCase testCase : cases) {
                 List<ParamObject> paramList = dealParams(commonParams, testCase.params());
                 CaseObject caseObject = new CaseObject();
                 caseObject.setCaseName(testCase.name());
                 caseObject.setCaseDesc(testCase.desc());
-                caseObject.setParamPOList(paramList);
+                caseObject.setParamObjectList(paramList);
                 caseMap.put(testCase.name(), caseObject);
             }
             testMethodMap.put(method, caseMap);
@@ -193,12 +192,12 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
      * @return  参数对象列表
      */
     private List<ParamObject> dealParams(TestParam[] commonParams, TestParam[] caseParams) {
-        Map<Class<? extends IParam>, Set<String>> paramClazzMethodNamesMap = new LinkedHashMap<>(16);
+        Map<Class<? extends IParam<?>>, Set<String>> paramClazzMethodNamesMap = new LinkedHashMap<>(16);
         changeParamArray2Map(paramClazzMethodNamesMap, commonParams);
         changeParamArray2Map(paramClazzMethodNamesMap, caseParams);
         ArrayList<ParamObject> paramList = new ArrayList<>();
-        for (Map.Entry<Class<? extends IParam>, Set<String>> entry : paramClazzMethodNamesMap.entrySet()) {
-            Class<? extends IParam> clazz = entry.getKey();
+        for (Map.Entry<Class<? extends IParam<?>>, Set<String>> entry : paramClazzMethodNamesMap.entrySet()) {
+            Class<? extends IParam<?>> clazz = entry.getKey();
             Set<String> paramMethodNames = entry.getValue();
             ParamObject paramObject = buildParamObject(clazz, paramMethodNames);
             paramList.add(paramObject);
@@ -206,7 +205,7 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
         return paramList;
     }
 
-    private void changeParamArray2Map(Map<Class<? extends IParam>, Set<String>>  paramClazzMethodNamesMap, TestParam[] params) {
+    private void changeParamArray2Map(Map<Class<? extends IParam<?>>, Set<String>>  paramClazzMethodNamesMap, TestParam[] params) {
         if (params == null || params.length <= 0) {
             return;
         }
@@ -215,8 +214,8 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
         }
     }
 
-    private void changeParam2Map(Map<Class<? extends IParam>, Set<String>> paramsMap, TestParam testParam) {
-        Class<? extends IParam> clazz = testParam.clazz();
+    private void changeParam2Map(Map<Class<? extends IParam<?>>, Set<String>> paramsMap, TestParam testParam) {
+        Class<? extends IParam<?>> clazz = testParam.clazz();
         Set<String> includes = paramsMap.getOrDefault(clazz, new LinkedHashSet<>());
         Collections.addAll(includes, testParam.in());
         if (includes.contains(ALL_MATCH_TAG) && includes.size()>1) {
@@ -226,22 +225,22 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
         paramsMap.put(clazz, includes);
     }
 
-    private ParamObject buildParamObject(Class<? extends IParam> paramClazz, Set<String> paramMethodNames) {
-        IParam paramObject;
+    private ParamObject buildParamObject(Class<? extends IParam<?>> paramClazz, Set<String> paramMethodNames) {
+        IParam<?> paramInstance;
         try {
-            paramObject = paramClazz.newInstance();
+            paramInstance = paramClazz.newInstance();
         } catch (Exception e) {
             throw new RuntimeException("实例化参数对象异常["+paramClazz.getSimpleName()+"]", e);
         }
-        Class<?> allowReturnType = paramObject.getParamType();
+        String allowReturnTypeName = GenericsUtil.getInterfaceGenericsTypeName(paramInstance, IParam.class, 0);
         boolean allParamMethods = false;
         if (paramMethodNames.contains(ALL_MATCH_TAG)) {
             allParamMethods = true;
         }
         Method[] paramClazzMethods = paramClazz.getDeclaredMethods();
-        HashMap<String, Object> methodName2ParamObjectMap = new LinkedHashMap<>();
+        HashMap<String, Object> methodName2ParamObjectMap = new LinkedHashMap<>(16);
         for (Method paramClazzMethod : paramClazzMethods) {
-            if (!checkReturnType(paramClazzMethod, allowReturnType)) {
+            if (!checkReturnType(paramClazzMethod, allowReturnTypeName)) {
                 continue;
             }
             if (paramClazzMethod.getParameterCount() != 0) {
@@ -253,7 +252,7 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
                 }
             }
             try {
-                Object paramBizObject = paramClazzMethod.invoke(paramObject);
+                Object paramBizObject = paramClazzMethod.invoke(paramInstance);
                 if (paramBizObject == null) {
                     continue;
                 }
@@ -262,42 +261,17 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
                 throw new RuntimeException("执行参数方法异常["+paramClazz.getSimpleName()+"#"+paramClazzMethod.getName()+"]", e);
             }
         }
-        ParamObject paramPO = new ParamObject();
-        paramPO.setParamClazz(allowReturnType);
-        paramPO.setTag(paramObject.getTag());
-        paramPO.setParamObjectMap(methodName2ParamObjectMap);
-        return paramPO;
+        ParamObject paramObject = new ParamObject();
+        paramObject.setTag(paramInstance.getTag());
+        paramObject.setParamObjectMap(methodName2ParamObjectMap);
+        return paramObject;
     }
 
-    private boolean checkReturnType(Method paramClazzMethod,Class<?> allowReturnType) {
-        if (checkCollection(paramClazzMethod,allowReturnType)) {
-            return true;
-        } else {
-            return paramClazzMethod.getReturnType() == allowReturnType;
-        }
+    private boolean checkReturnType(Method paramClazzMethod,String allowReturnTypeName) {
+        return Objects.equals(paramClazzMethod.getGenericReturnType().getTypeName(), allowReturnTypeName);
     }
 
-    private boolean checkCollection(Method paramClazzMethod,Class<?> allowReturnType) {
-        Class<?> returnType = paramClazzMethod.getReturnType();
-        Type genericReturnType = paramClazzMethod.getGenericReturnType();
-        String typeName = genericReturnType.getTypeName();
-        int length;
-        if (List.class == returnType) {
-            length = List.class.getTypeName().length();
-        } else if (Set.class == returnType) {
-            length = Set.class.getTypeName().length();
-        } else if (Collection.class == returnType) {
-            length = Collection.class.getTypeName().length();
-        } else {
-            return false;
-        }
-        String substring = typeName.substring(length + 1);
-        substring = substring.substring(0, substring.length() - 1);
-        return substring.equals(allowReturnType.getTypeName());
-    }
-
-
-    static class CaseObject {
+    private static class CaseObject {
         private String caseName;
         private String caseDesc;
         private List<ParamObject> paramObjectList;
@@ -317,19 +291,18 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
             this.caseDesc = caseDesc;
         }
 
-        public List<ParamObject> getParamPOList() {
+        public List<ParamObject> getParamObjectList() {
             return paramObjectList;
         }
 
-        public void setParamPOList(List<ParamObject> paramObjectList) {
+        public void setParamObjectList(List<ParamObject> paramObjectList) {
             this.paramObjectList = paramObjectList;
         }
     }
 
-    static class ParamObject {
-        private Class<?> paramClazz;
+    private static class ParamObject {
         private String tag;
-        private Map<String, Object> paramObjectMap = new HashMap<>();
+        private Map<String, Object> paramObjectMap = new HashMap<>(16);
 
         public Map<String, Object> getParamObjectMap() {
             return paramObjectMap;
@@ -337,14 +310,6 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
 
         public void setParamObjectMap(Map<String, Object> paramObjectMap) {
             this.paramObjectMap = paramObjectMap;
-        }
-
-        public Class<?> getParamClazz() {
-            return paramClazz;
-        }
-
-        public void setParamClazz(Class<?> paramClazz) {
-            this.paramClazz = paramClazz;
         }
 
         public String getTag() {
