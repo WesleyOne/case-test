@@ -12,7 +12,6 @@ public class GenericsUtil {
 
     /**
      * 获取接口上的泛型T
-     * 如果T是List<E>,则返回java.lang.List<E>
      *
      * @param instance        接口实现类
      * @param interfaceClazz  接口类型

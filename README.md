@@ -25,18 +25,18 @@ case-test
 
 ## 使用介绍
 
-1. 添加maven依赖
+#### 1. 添加maven依赖
 ```xml
 <!-- https://mvnrepository.com/artifact/io.github.wesleyone/case-test -->
 <dependency>
     <groupId>io.github.wesleyone</groupId>
     <artifactId>case-test</artifactId>
-    <version>1.0-release</version>
+    <version>2.0</version>
     <scope>test</scope>
 </dependency>
 ```
 
-2. 构建**属性值对象**
+#### 2. 构建**属性值对象**
 
 参考在本项目中的如下测试代码：
 
@@ -47,28 +47,28 @@ case-test
  - 实现`io.github.wesleyone.cases.test.IParam`接口 
  - 通过方法形式构建对应的属性值
 
-3. 实现测试启动类
+#### 3. 实现测试启动类
 
 参考在本项目中的如下测试代码：
 
 `io.github.wesleyone.cases.test.PriceContextTestBoostrap`
 
-新建启动类实现`io.github.wesleyone.cases.test.TestBootstrap`,并实现`newBizContext`、`setProperties`、`handle`自定义方法
+新建启动类实现`io.github.wesleyone.cases.test.TestBootstrap`，继承`io.github.wesleyone.cases.test.TestBootstrap`类，并实现`newBizContext`、`setProperties`、`handle`自定义方法
 `newBizContext`方法：实例业务上下文对象
 `setProperties`方法：自定义设置属性
 `handle`方法：自定义接口方法处理
 
-4. 构建场景
+#### 4. 构建场景方法
 
 参考在本项目中的如下测试代码：
 
-`io.github.wesleyone.cases.test.MallPriceContextTestBoostrap`
+`io.github.wesleyone.cases.test.PriceContextTestBoostrap`
 
 实现**前置方法**、**后置方法**
 
 ```java
-public class MallPriceContextTestBoostrap extends PriceContextTestBoostrap {
-
+public class PriceContextTestBoostrap extends TestBootstrap<PriceContext> {
+    
     /**
      * 前置处理方法，可以没有
      * 命名要求如下：
@@ -96,6 +96,20 @@ public class MallPriceContextTestBoostrap extends PriceContextTestBoostrap {
     }
 }
 ```
+
+#### 5. 开始执行
+
+添加测试入口方法如下，其中`run()`方法是`TestBootstrap`父类的启动方法
+```
+    @Test
+    public void test() {
+        run();
+    }
+```
+运行该测试入口方法，则会将当前类的所有场景跑一边。
+
+> 建议将场景方法按业务场景分开到多个类，然后这些类共同继承上文的测试启动类。
+
 
 ## 缺陷
 1. 属性值对象不支持MAP属性（业务接口入参属性原则上不允许MAP类型）
