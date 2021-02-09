@@ -1,7 +1,6 @@
 package io.github.wesleyone.cases.test;
 
 import io.github.wesleyone.cases.test.annotation.TestCase;
-import io.github.wesleyone.cases.test.annotation.TestCases;
 import io.github.wesleyone.cases.test.annotation.TestParam;
 import io.github.wesleyone.cases.test.util.GenericsUtil;
 
@@ -39,9 +38,9 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
     }
 
     private void check() {
-        T t = newInstance();
+        T t = this.newBizContext();
         if (t == null) {
-            throw new RuntimeException("返回业务上下文NULL,请检查["+this.getClass()+"#newInstance]");
+            throw new RuntimeException("返回业务上下文NULL,请检查["+this.getClass()+"#newBizContext]实现");
         }
     }
 
@@ -81,15 +80,13 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
     }
 
     private void doBefore(TestCaseContext<T> testCaseContext, Method testMethod) {
-        // 测试场景方法对应的前置处理方法名称
         String beforeMethodName = BEFORE_TAG + testMethod.getName();
         try {
-            // 查询场景级别的前置处理方法并执行
             Method beforeMethod = this.getClass().getDeclaredMethod(beforeMethodName, TestCaseContext.class);
             beforeMethod.invoke(this, testCaseContext);
         } catch (NoSuchMethodException ignore2) {
         } catch (Exception e) {
-            throw new RuntimeException("调用前置方法失败["+this.getClass().getSimpleName()+"#"+beforeMethodName+"]");
+            throw new RuntimeException("调用前置方法失败["+this.getClass().getSimpleName()+"#"+beforeMethodName+"]", e);
         }
     }
 
@@ -112,7 +109,7 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
     }
 
     /**
-     * 递归自动构建单个场景case中的所有测试用例上下文
+     * 递归自动构建单个场景case中的所有参数对象
      */
     private List<TestCaseContext<T>> autoSetParametersAndBuildContext(CaseObject caseObject, List<ParamObject> paramObjectList) {
         return autoSetParametersAndBuildContext(caseObject, paramObjectList, paramObjectList.size()-1);
@@ -128,7 +125,7 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
             Object value = paramRealObject.getValue();
             if (index <= 0) {
                 // final layer
-                T t = newInstance();
+                T t = this.newBizContext();
                 setProperties(t, tag, value);
                 TestCaseContext<T> testCaseContext = new TestCaseContext<>();
                 testCaseContext.setCaseName(caseObject.getCaseName());
@@ -154,31 +151,17 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
         HashMap<Method, HashMap<String, CaseObject>> testMethodMap = new HashMap<>(16);
         Method[] methods = this.getClass().getDeclaredMethods();
         for (Method method : methods) {
-            TestCase[] cases;
-            TestParam[] commonParams = null;
-            TestCases testCases = method.getAnnotation(TestCases.class);
-            if (testCases != null) {
-                cases = testCases.cases();
-                commonParams = testCases.params();
-            } else {
-                TestCase singleCase = method.getAnnotation(TestCase.class);
-                if (singleCase == null) {
-                    continue;
-                }
-                cases = new TestCase[]{singleCase};
-            }
-            if (cases.length <= 0) {
+            TestCase testCase = method.getAnnotation(TestCase.class);
+            if (testCase == null) {
                 continue;
             }
             HashMap<String, CaseObject> caseMap = new HashMap<>(16);
-            for (TestCase testCase : cases) {
-                List<ParamObject> paramList = dealParams(commonParams, testCase.params());
-                CaseObject caseObject = new CaseObject();
-                caseObject.setCaseName(testCase.name());
-                caseObject.setCaseDesc(testCase.desc());
-                caseObject.setParamObjectList(paramList);
-                caseMap.put(testCase.name(), caseObject);
-            }
+            List<ParamObject> paramList = dealParams( testCase.params());
+            CaseObject caseObject = new CaseObject();
+            caseObject.setCaseName(testCase.name());
+            caseObject.setCaseDesc(testCase.desc());
+            caseObject.setParamObjectList(paramList);
+            caseMap.put(testCase.name(), caseObject);
             testMethodMap.put(method, caseMap);
         }
         return testMethodMap;
@@ -187,14 +170,11 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
     /**
      * 聚合公共参数和场景参数，构建参数对象
      * 参数追加模式
-     * @param commonParams  公共参数
      * @param caseParams    场景参数
      * @return  参数对象列表
      */
-    private List<ParamObject> dealParams(TestParam[] commonParams, TestParam[] caseParams) {
-        Map<Class<? extends IParam<?>>, Set<String>> paramClazzMethodNamesMap = new LinkedHashMap<>(16);
-        changeParamArray2Map(paramClazzMethodNamesMap, commonParams);
-        changeParamArray2Map(paramClazzMethodNamesMap, caseParams);
+    private List<ParamObject> dealParams(TestParam[] caseParams) {
+        Map<Class<? extends IParam<?>>, Set<String>> paramClazzMethodNamesMap = changeParamArray2Map(caseParams);
         ArrayList<ParamObject> paramList = new ArrayList<>();
         for (Map.Entry<Class<? extends IParam<?>>, Set<String>> entry : paramClazzMethodNamesMap.entrySet()) {
             Class<? extends IParam<?>> clazz = entry.getKey();
@@ -205,13 +185,15 @@ public abstract class TestBootstrap<T> implements IBizContext<T> {
         return paramList;
     }
 
-    private void changeParamArray2Map(Map<Class<? extends IParam<?>>, Set<String>>  paramClazzMethodNamesMap, TestParam[] params) {
+    private Map<Class<? extends IParam<?>>, Set<String>> changeParamArray2Map(TestParam[] params) {
+        Map<Class<? extends IParam<?>>, Set<String>> paramClazzMethodNamesMap = new LinkedHashMap<>(16);
         if (params == null || params.length <= 0) {
-            return;
+            return paramClazzMethodNamesMap;
         }
         for (TestParam param : params) {
             changeParam2Map(paramClazzMethodNamesMap, param);
         }
+        return paramClazzMethodNamesMap;
     }
 
     private void changeParam2Map(Map<Class<? extends IParam<?>>, Set<String>> paramsMap, TestParam testParam) {

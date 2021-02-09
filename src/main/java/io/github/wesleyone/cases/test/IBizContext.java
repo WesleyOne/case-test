@@ -11,13 +11,19 @@ public interface IBizContext<T> {
     /**
      * new 业务上下文
      * INSTANCE YOUR BUSINESS CONTEXT
+     *
+     * 由用户处理，以适用于复杂构造方法
+     *
      * @return 业务上下文对象 YOUR BUSINESS CONTEXT
      */
-    T newInstance();
+    T newBizContext();
 
     /**
      * 设置属性值
      * set Properties of YOUR BUSINESS CONTEXT
+     *
+     * 由用户处理，以适用于复杂属性设置方法
+     *
      * @param bizContext    业务上下文对象 YOUR BUSINESS CONTEXT
      * @param tag           参数标记 {@link IParam#getTag()}
      * @param value         属性值
