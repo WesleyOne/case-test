@@ -1,11 +1,9 @@
- ______     ______     ______     ______     ______   ______     ______     ______  
-/\  ___\   /\  __ \   /\  ___\   /\  ___\   /\__  _\ /\  ___\   /\  ___\   /\__  _\
-\ \ \____  \ \  __ \  \ \___  \  \ \  __\   \/_/\ \/ \ \  __\   \ \___  \  \/_/\ \/
- \ \_____\  \ \_\ \_\  \/\_____\  \ \_____\    \ \_\  \ \_____\  \/\_____\    \ \_\
-  \/_____/   \/_/\/_/   \/_____/   \/_____/     \/_/   \/_____/   \/_____/     \/_/ 
-
 ## 项目介绍
-case-test
+case-test 
+
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.wesleyone/case-test/badge.svg)](https://search.maven.org/artifact/io.github.wesleyone/case-test/2.0/jar)
+[![GitHub release](https://img.shields.io/badge/release-download-orange.svg)](https://github.com/WesleyOne/case-test/releases)
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 ### 背景
 在做定价接口的逻辑调整时，发现测试用例非常多（用户角色、活动、营销等多维度聚合），用例预期结果具有大量重复，逐个写单测代码量巨大且效率低。
@@ -22,6 +20,10 @@ case-test
 ### 核心
 - 自动封装入参对象
 - 聚合到同一场景来处理
+
+### 示意图
+
+![示意图](./casetest.jpg)
 
 ## 使用介绍
 
